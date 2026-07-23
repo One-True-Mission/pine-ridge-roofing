@@ -50,6 +50,53 @@
   var yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  /* ---------- Gallery carousel: featured-center, auto-advancing ---------- */
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var carousel = document.querySelector(".gallery-carousel");
+  if (carousel) {
+    var slides = Array.prototype.slice.call(carousel.querySelectorAll(".gallery-slide"));
+    var dotsWrap = carousel.querySelector(".carousel-dots");
+    var prevBtn = carousel.querySelector(".carousel-prev");
+    var nextBtn = carousel.querySelector(".carousel-next");
+    var index = 0;
+    var timer = null;
+    var INTERVAL = 4500;
+
+    slides.forEach(function (_, i) {
+      var dot = document.createElement("button");
+      dot.className = "carousel-dot";
+      dot.type = "button";
+      dot.setAttribute("aria-label", "Go to image " + (i + 1));
+      dot.addEventListener("click", function () { goTo(i); restart(); });
+      dotsWrap.appendChild(dot);
+    });
+    var dots = Array.prototype.slice.call(dotsWrap.children);
+
+    function goTo(i) {
+      index = (i + slides.length) % slides.length;
+      var prev = (index - 1 + slides.length) % slides.length;
+      var next = (index + 1) % slides.length;
+      slides.forEach(function (slide, s) {
+        slide.classList.remove("is-active", "is-prev", "is-next");
+        if (s === index) slide.classList.add("is-active");
+        else if (s === prev) slide.classList.add("is-prev");
+        else if (s === next) slide.classList.add("is-next");
+      });
+      dots.forEach(function (dot, d) { dot.classList.toggle("is-active", d === index); });
+    }
+    function start() { if (reduceMotion) return; timer = setInterval(function () { goTo(index + 1); }, INTERVAL); }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function restart() { stop(); start(); }
+
+    if (prevBtn) prevBtn.addEventListener("click", function () { goTo(index - 1); restart(); });
+    if (nextBtn) nextBtn.addEventListener("click", function () { goTo(index + 1); restart(); });
+    carousel.addEventListener("mouseenter", stop);
+    carousel.addEventListener("mouseleave", function () { if (!timer) start(); });
+
+    goTo(0);
+    start();
+  }
+
   /* ---------- Phone fields: live US formatting + validation ---------- */
   function initPhoneFields() {
     var fields = document.querySelectorAll('input[type="tel"]');

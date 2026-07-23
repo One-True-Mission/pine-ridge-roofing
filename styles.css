@@ -304,6 +304,35 @@ section { padding: 90px 0; position: relative; }
 .area-list li:hover { border-color: var(--green); color: var(--green-deep); }
 
 /* ============================================================
+   GALLERY CAROUSEL (featured-center coverflow, auto-advancing)
+   ============================================================ */
+.gallery-carousel { position: relative; }
+.gallery-stage { position: relative; height: 460px; overflow: hidden; }
+.gallery-slide {
+  position: absolute; top: 0; left: 50%;
+  width: 60%; height: 100%;
+  transform: translateX(-50%) scale(0.7);
+  opacity: 0;
+  transition: transform 0.55s ease, opacity 0.55s ease;
+  pointer-events: none;
+}
+.gallery-slide img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-card); border: 1px solid var(--line); box-shadow: var(--shadow-soft); }
+.gallery-slide.is-active { transform: translateX(-50%) scale(1); opacity: 1; z-index: 3; pointer-events: auto; }
+.gallery-slide.is-prev { transform: translateX(-108%) scale(0.78); opacity: 0.42; z-index: 2; }
+.gallery-slide.is-next { transform: translateX(8%) scale(0.78); opacity: 0.42; z-index: 2; }
+.carousel-controls { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 32px; }
+.carousel-btn {
+  background: transparent; border: 2px solid var(--green); color: var(--green-deep);
+  width: 46px; height: 46px; border-radius: 50%; font-size: 1.2rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.carousel-btn:hover { background: var(--green); color: #fff; transform: translateY(-2px); }
+.carousel-dots { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 240px; }
+.carousel-dot { width: 10px; height: 10px; border-radius: 50%; border: none; background: rgba(var(--green-rgb), 0.3); cursor: pointer; transition: background 0.2s ease, transform 0.2s ease; }
+.carousel-dot.is-active { background: var(--green); transform: scale(1.3); }
+
+/* ============================================================
    CTA STRIP (overlay composited into the background stack)
    ============================================================ */
 .cta { position: relative; overflow: hidden; text-align: center; color: #fff; background-color: var(--pine-deep); background-image: linear-gradient(180deg, rgba(18, 36, 26, 0.60), rgba(18, 36, 26, 0.62)), url('assets/cta-bg.jpg'); background-size: cover; background-position: center; }
@@ -411,6 +440,7 @@ section { padding: 90px 0; position: relative; }
   .values-grid { grid-template-columns: 1fr; }
   .hero { min-height: 78vh; }
   .flow-step { grid-template-columns: auto 1fr; }
+  .gallery-stage { height: 340px; }
 }
 @media (max-width: 560px) {
   body { font-size: 16px; }
@@ -420,6 +450,10 @@ section { padding: 90px 0; position: relative; }
   .trust-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
   .footer-grid { grid-template-columns: 1fr; }
   .field-row { grid-template-columns: 1fr; }
+  .gallery-stage { height: 230px; }
+  .gallery-slide { width: 80%; }
+  .gallery-slide.is-prev { transform: translateX(-116%) scale(0.8); }
+  .gallery-slide.is-next { transform: translateX(16%) scale(0.8); }
   .page-hero { padding: 130px 0 60px; }
   .hero-actions { flex-direction: column; }
   .hero-actions .btn { width: 100%; }
