@@ -1,0 +1,6 @@
+SPEC.md
+BUILD-NOTES.md
+*.tmp
+gen-assets.ps1
+.DS_Store
+Thumbs.db
