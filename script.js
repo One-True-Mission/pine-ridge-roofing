@@ -50,11 +50,17 @@
   var yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  /* ---------- Gallery carousel: featured-center, auto-advancing ---------- */
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var carousel = document.querySelector(".gallery-carousel");
-  if (carousel) {
+
+  /* ---------- Gallery carousels: featured-center, auto-advancing ----------
+     Supports multiple carousels on one page. Each .gallery-carousel gets its
+     own index, timer, and dots so they run independently. ---------- */
+  var carousels = document.querySelectorAll(".gallery-carousel");
+
+  carousels.forEach(function (carousel) {
     var slides = Array.prototype.slice.call(carousel.querySelectorAll(".gallery-slide"));
+    if (!slides.length) return;
+
     var dotsWrap = carousel.querySelector(".carousel-dots");
     var prevBtn = carousel.querySelector(".carousel-prev");
     var nextBtn = carousel.querySelector(".carousel-next");
@@ -62,15 +68,18 @@
     var timer = null;
     var INTERVAL = 4500;
 
-    slides.forEach(function (_, i) {
-      var dot = document.createElement("button");
-      dot.className = "carousel-dot";
-      dot.type = "button";
-      dot.setAttribute("aria-label", "Go to image " + (i + 1));
-      dot.addEventListener("click", function () { goTo(i); restart(); });
-      dotsWrap.appendChild(dot);
-    });
-    var dots = Array.prototype.slice.call(dotsWrap.children);
+    var dots = [];
+    if (dotsWrap) {
+      slides.forEach(function (_, i) {
+        var dot = document.createElement("button");
+        dot.className = "carousel-dot";
+        dot.type = "button";
+        dot.setAttribute("aria-label", "Go to image " + (i + 1));
+        dot.addEventListener("click", function () { goTo(i); restart(); });
+        dotsWrap.appendChild(dot);
+      });
+      dots = Array.prototype.slice.call(dotsWrap.children);
+    }
 
     function goTo(i) {
       index = (i + slides.length) % slides.length;
@@ -95,7 +104,89 @@
 
     goTo(0);
     start();
-  }
+  });
+
+  /* ---------- Before / after sliders ----------
+     Position is driven by a single CSS custom property (--ba-pos) on the
+     frame. The before image is masked with clip-path, never resized, so
+     there is no zoom, scale, or drift while dragging.
+     Pointer events cover mouse, touch, and pen in one code path. ---------- */
+  document.querySelectorAll("[data-ba]").forEach(function (slider) {
+    var frame = slider.querySelector(".ba-frame");
+    var handle = slider.querySelector(".ba-handle");
+    if (!frame || !handle) return;
+
+    var pos = 50;
+    var dragging = false;
+    var rafId = null;
+    var pendingX = null;
+
+    function apply(p, animate) {
+      pos = Math.max(0, Math.min(100, p));
+      frame.classList.toggle("is-animating", !!animate && !reduceMotion);
+      frame.style.setProperty("--ba-pos", pos + "%");
+      var rounded = Math.round(pos);
+      handle.setAttribute("aria-valuenow", rounded);
+      handle.setAttribute("aria-valuetext", rounded + " percent");
+    }
+
+    function percentFromX(clientX) {
+      var rect = frame.getBoundingClientRect();
+      if (!rect.width) return pos;
+      return ((clientX - rect.left) / rect.width) * 100;
+    }
+
+    /* Coalesce pointermove into one update per animation frame so fast
+       drags stay smooth instead of thrashing layout. */
+    function scheduleFromX(clientX) {
+      pendingX = clientX;
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(function () {
+        rafId = null;
+        if (pendingX !== null) apply(percentFromX(pendingX), false);
+        pendingX = null;
+      });
+    }
+
+    frame.addEventListener("pointerdown", function (e) {
+      dragging = true;
+      frame.classList.remove("is-animating");
+      try { frame.setPointerCapture(e.pointerId); } catch (err) {}
+      apply(percentFromX(e.clientX), false);
+      e.preventDefault();
+    });
+
+    frame.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      scheduleFromX(e.clientX);
+      e.preventDefault();
+    });
+
+    function endDrag(e) {
+      if (!dragging) return;
+      dragging = false;
+      if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+      if (pendingX !== null) { apply(percentFromX(pendingX), false); pendingX = null; }
+      try { frame.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
+    frame.addEventListener("pointerup", endDrag);
+    frame.addEventListener("pointercancel", endDrag);
+    frame.addEventListener("lostpointercapture", function () { dragging = false; });
+
+    /* Keyboard support */
+    handle.addEventListener("keydown", function (e) {
+      var step = e.shiftKey ? 10 : 2;
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") { apply(pos - step, true); e.preventDefault(); }
+      else if (e.key === "ArrowRight" || e.key === "ArrowUp") { apply(pos + step, true); e.preventDefault(); }
+      else if (e.key === "Home") { apply(0, true); e.preventDefault(); }
+      else if (e.key === "End") { apply(100, true); e.preventDefault(); }
+    });
+
+    /* Keep the split accurate if the frame is resized or rotated. */
+    window.addEventListener("resize", function () { apply(pos, false); });
+
+    apply(50, false);
+  });
 
   /* ---------- Phone fields: live US formatting + validation ---------- */
   function initPhoneFields() {
