@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pineridgeroofingtx.com/sitemap.xml
+Disallow: /thank-you.html
+Disallow: /thank-you
+Disallow: /404.html
+
+Sitemap: https://pineridgeroofs.com/sitemap.xml
