@@ -103,30 +103,42 @@
         </div>
 
         <div class="form-card">
-          <form action="https://formspree.io/f/xkoddnbp" method="POST" data-validate novalidate>
+          <form action="https://formspree.io/f/xzdnooeo" method="POST" data-validate novalidate
+                toolname="request_roofing_estimate"
+                tooldescription="Request a free, no-obligation roofing or water damage restoration estimate from Pine Ridge Roofing and Mitigation, serving East Texas.">
             <input type="hidden" name="_subject" value="New Free Estimate Request - Pine Ridge Website">
-            <input type="hidden" name="_next" value="https://pineridgeroofs.com/thank-you">
             <div class="field-row">
               <div class="field">
-                <label for="name">Name *</label>
-                <input type="text" id="name" name="name" required autocomplete="name">
+                <label for="first_name">First Name *</label>
+                <input type="text" id="first_name" name="first_name" required autocomplete="given-name" tool-param-description="Visitor's first name">
+                <span class="field-error"></span>
               </div>
               <div class="field">
-                <label for="phone">Phone *</label>
-                <input type="tel" id="phone" name="phone" required autocomplete="tel">
+                <label for="last_name">Last Name *</label>
+                <input type="text" id="last_name" name="last_name" required autocomplete="family-name" tool-param-description="Visitor's last name">
+                <span class="field-error"></span>
               </div>
             </div>
-            <div class="field">
-              <label for="email">Email</label>
-              <input type="email" id="email" name="email" autocomplete="email">
+            <div class="field-row">
+              <div class="field">
+                <label for="phone">Phone *</label>
+                <input type="tel" id="phone" name="phone" required autocomplete="tel" inputmode="numeric" tool-param-description="Visitor's 10 digit US phone number">
+                <span class="field-error"></span>
+              </div>
+              <div class="field">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required autocomplete="email" tool-param-description="Visitor's email address">
+                <span class="field-error"></span>
+              </div>
             </div>
             <div class="field">
               <label for="city">City / Area *</label>
-              <input type="text" id="city" name="city" required placeholder="Jacksonville, Rusk, Tyler...">
+              <input type="text" id="city" name="city" required placeholder="Jacksonville, Rusk, Tyler..." autocomplete="address-level2" tool-param-description="City or town where the work is needed">
+              <span class="field-error"></span>
             </div>
             <div class="field">
               <label for="service">What Do You Need?</label>
-              <select id="service" name="service">
+              <select id="service" name="service" tool-param-description="Type of work needed: residential roofing, commercial roofing, water mitigation and restoration, storm damage, or something else">
                 <option value="Residential Roofing">Residential Roofing</option>
                 <option value="Commercial Roofing">Commercial Roofing</option>
                 <option value="Water Mitigation and Restoration">Water Mitigation and Restoration</option>
@@ -136,13 +148,15 @@
             </div>
             <div class="field">
               <label for="message">Tell Us About the Job *</label>
-              <textarea id="message" name="message" required placeholder="What is going on with the roof or the water, roughly when it started, and anything else we should know."></textarea>
+              <textarea id="message" name="message" required placeholder="What is going on with the roof or the water, roughly when it started, and anything else we should know." tool-param-description="Description of the roofing or water damage problem"></textarea>
+              <span class="field-error"></span>
             </div>
             <div class="field-consent">
               <input type="checkbox" id="consent" name="consent" value="yes">
               <label for="consent">I agree that Pine Ridge Roofing and Mitigation may contact me by phone, text, or email about my request. Message and data rates may apply, and I can reply STOP to opt out of texts at any time. See our <a href="privacy.html">Privacy Policy</a>.</label>
             </div>
             <p id="consent-error" class="field-error">Please check the box so we know we can contact you.</p>
+            <p class="form-banner" role="alert"></p>
             <button type="submit" class="btn btn-primary btn-block">Send My Request</button>
             <p class="form-fineprint">We respond to every request. Residential or commercial, no job is too small.</p>
           </form>

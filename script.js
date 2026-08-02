@@ -188,11 +188,10 @@
     apply(50, false);
   });
 
-  /* ---------- Phone fields: live US formatting + validation ---------- */
+  /* ---------- Phone fields: live US formatting, 10 digit cap ---------- */
   function initPhoneFields() {
-    var fields = document.querySelectorAll('input[type="tel"]');
-    fields.forEach(function (field) {
-      field.setAttribute("inputmode", "tel");
+    document.querySelectorAll('input[type="tel"]').forEach(function (field) {
+      field.setAttribute("inputmode", "numeric");
       field.setAttribute("maxlength", "14");
       if (!field.getAttribute("placeholder")) field.setAttribute("placeholder", "(555) 123-4567");
 
@@ -203,55 +202,129 @@
         else if (d.length > 3) out = "(" + d.slice(0, 3) + ") " + d.slice(3);
         else if (d.length > 0) out = "(" + d.slice(0, 3);
         field.value = out;
-        if (field.classList.contains("invalid") && d.length === 10) {
-          field.classList.remove("invalid");
-        }
       });
     });
   }
   initPhoneFields();
 
-  function phoneIsValid(field) {
-    return field.value.replace(/\D/g, "").length === 10;
-  }
+  /* ---------- Forms: validation + AJAX submit with self-managed redirect ----------
+     Formspree moved the post-submit redirect into a dashboard setting, so the
+     _next hidden input is ignored and visitors land on Formspree's own thanks
+     page. We submit via fetch and perform the redirect ourselves, which works
+     on any plan, any domain, and needs no dashboard configuration. ---------- */
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
 
-  /* ---------- Form validation (required fields, phone, TCPA consent) ---------- */
-  var form = document.querySelector("form[data-validate]");
-  if (form) {
-    form.addEventListener("submit", function (e) {
+  document.querySelectorAll("form[data-validate]").forEach(function (form) {
+    var submitBtn = form.querySelector('button[type="submit"]');
+    var originalLabel = submitBtn ? submitBtn.innerHTML : "";
+    var banner = form.querySelector(".form-banner");
+
+    function errorSpan(field) {
+      var wrap = field.closest(".field");
+      return wrap ? wrap.querySelector(".field-error") : null;
+    }
+    function setError(field, msg) {
+      field.classList.add("has-error");
+      var s = errorSpan(field);
+      if (s) { s.textContent = msg; s.classList.add("show"); }
+    }
+    function clearError(field) {
+      field.classList.remove("has-error");
+      var s = errorSpan(field);
+      if (s) { s.textContent = ""; s.classList.remove("show"); }
+    }
+    function showBanner(msg) {
+      if (!banner) return;
+      banner.textContent = msg;
+      banner.classList.add("show");
+    }
+    function hideBanner() {
+      if (banner) banner.classList.remove("show");
+    }
+
+    /* Clear a field's error as soon as the visitor edits it. */
+    form.querySelectorAll("input, textarea, select").forEach(function (field) {
+      field.addEventListener("input", function () { clearError(field); });
+      field.addEventListener("change", function () { clearError(field); });
+    });
+
+    function validate() {
       var ok = true;
-      var firstInvalid = null;
+      var firstBad = null;
 
-      form.querySelectorAll("input, textarea, select").forEach(function (field) {
-        if (field.type === "checkbox") return;
-        if (field.hasAttribute("required")) {
-          var empty = !field.value.trim();
-          var badPhone = field.type === "tel" && !empty && !phoneIsValid(field);
-          if (empty || badPhone) {
-            field.classList.add("invalid");
-            ok = false;
-            if (!firstInvalid) firstInvalid = field;
-          } else {
-            field.classList.remove("invalid");
-          }
-        }
+      function fail(field, msg) {
+        setError(field, msg);
+        ok = false;
+        if (!firstBad) firstBad = field;
+      }
+
+      var first = form.querySelector('[name="first_name"]');
+      if (first && first.value.trim().length < 2) fail(first, "Please enter your first name.");
+
+      var last = form.querySelector('[name="last_name"]');
+      if (last && last.value.trim().length < 2) fail(last, "Please enter your last name.");
+
+      var phone = form.querySelector('input[type="tel"][required]');
+      if (phone && phone.value.replace(/\D/g, "").length !== 10) {
+        fail(phone, "Please enter a 10 digit phone number.");
+      }
+
+      var email = form.querySelector('input[type="email"][required]');
+      if (email && !EMAIL_RE.test(email.value.trim())) {
+        fail(email, "Please enter a valid email address.");
+      }
+
+      /* Any other required field just needs content. */
+      form.querySelectorAll("input[required], textarea[required]").forEach(function (field) {
+        if (field.type === "checkbox" || field.type === "tel" || field.type === "email") return;
+        if (field.name === "first_name" || field.name === "last_name") return;
+        if (!field.value.trim()) fail(field, "This field is required.");
       });
 
-      /* TCPA consent must be checked */
       var consent = form.querySelector('input[name="consent"]');
       var consentError = form.querySelector("#consent-error");
       if (consent && !consent.checked) {
         ok = false;
         if (consentError) consentError.classList.add("show");
-        if (!firstInvalid) firstInvalid = consent;
+        if (!firstBad) firstBad = consent;
       } else if (consentError) {
         consentError.classList.remove("show");
       }
 
-      if (!ok) {
-        e.preventDefault();
-        if (firstInvalid && firstInvalid.focus) firstInvalid.focus();
+      if (!ok && firstBad) {
+        firstBad.focus({ preventScroll: true });
+        firstBad.scrollIntoView({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "center"
+        });
       }
+      return ok;
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      hideBanner();
+      if (!validate()) return;
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "Sending...";
+      }
+
+      fetch(form.action, {
+        method: "POST",
+        body: new FormData(form),
+        headers: { "Accept": "application/json" }
+      }).then(function (res) {
+        if (!res.ok) throw new Error("bad-response");
+        window.location.href = new URL("thank-you.html", window.location.href).href;
+      }).catch(function () {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalLabel;
+        }
+        showBanner("Something went wrong sending your request. Please try again, or call Josh at (903) 363-4384.");
+      });
     });
-  }
+  });
 })();
